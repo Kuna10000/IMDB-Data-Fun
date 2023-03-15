@@ -6,15 +6,15 @@ Created on Thu Feb  9 18:43:45 2023
 """
 
 from requests import get
-from bs4 import BeautifulSoup as soup
+from bs4      import BeautifulSoup as soup
 import pandas as pd
-headers = {"user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.182 Safari/537.36"}
 
-
-url = get("https://www.imdb.com/search/title/?title_type=feature,tv_movie,tv_series,documentary,short&num_votes=100,&count=10,&sort=num_votes,desc").text
+headers  = {"user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.182 Safari/537.36"}
+url      = get("https://www.imdb.com/search/title/?title_type=feature,tv_movie,tv_series,documentary,short&num_votes=100,&count=10,&sort=num_votes,desc").text
 mainPage = soup(url,'html.parser')
-movies = mainPage.findAll('div',{'class':'lister-item mode-advanced'})
+movies   = mainPage.findAll('div',{'class':'lister-item mode-advanced'})
 
+movieId = []
 titles = []
 time = []
 year = []
@@ -25,8 +25,14 @@ gross = []
 description = []
 region = []
 
+currentId = 0
+
 for i in movies:
-    titles.append(i.h3.a.text)
+    movieId.append(currentId)
+    try :
+        titles.append(i.h3.a.text)
+    except :
+        titles.append(-1)
     try :
         time.append((i.p.find('span',{'class':'runtime'}).text).split(' ',1)[0])
     except:
@@ -36,7 +42,9 @@ for i in movies:
     except:
         year.append(-1)
     try:
-        genre.append((i.p.find('span',{'class':'genre'}).text).replace(' ','')[1:])
+        genreRaw = (i.p.find('span',{'class':'genre'}).text).replace(' ','')[1:]
+        genreList = genreRaw.split(",")
+        genre.append(genreList)
     except:
         genre.append(-1)
     try:
@@ -72,7 +80,18 @@ for i in movies:
         region.append(tempReg)
     except:
         region.append(-1)
+    
+    if currentId <= 20:
+        print("Fin ID",currentId)
+    elif currentId % 10 == 0 and currentId <= 500:    
+        print("Fin ID",currentId)
+    elif currentId % 100 == 0:    
+        print("Fin ID",currentId)
+        
+    currentId += 1
+    
 
+    
 
 #nextPage = mainPage.find('div',{'class':'desc'}).find_next('a')['href']
 #nextPage = "/search/title/?title_type=feature,documentary,short&languages=ja&count=100&start="+str(x)+"01&ref_=adv_nxt"
@@ -83,13 +102,27 @@ for i in movies:
 #nextPage = soup(nextPage,'html.parser')
 #movies = nextPage.findAll('div',{'class':'lister-item mode-advanced'})
 
-rows = list(zip(titles,year,genre,region))
-#rows=list(zip(titles,time,year,genre,votes,rating,gross,description))
-#df = pd.DataFrame(rows,columns=['title','length(minutes)','year','genre','votes','rating','gross','description'])
-df = pd.DataFrame(rows,columns=['title','length(minutes)','year','region'])
-print(df)
 
-#print(titles,time,year,genre,votes,rating,gross,description)
 
-#df.to_csv('C:/Users/kurt/OneDrive/CSV Files/imdb/imdb_'+reg+'.csv',index=False)
+rows = list(zip(movieId,titles,time,year,votes,rating,gross,description))
+movieDataPrime = pd.DataFrame(rows,columns=['movieId','title','length','releaseYear','votes','rating','gross','description'])
+
+zipped = list(zip(movieId, genre))
+genre_tuples = [[movieId, genre] for movieId, genre_list in zipped for genre in genre_list]
+movieDataGenre =  pd.DataFrame(genre_tuples,columns=['movieId','genre'])
+
+zipped = list(zip(movieId, region))
+genre_tuples = [[movieId, region] for movieId, region_list in zipped for region in region_list]
+movieDataRegion = pd.DataFrame(genre_tuples,columns=['movieId','region'])
+
+print(movieDataGenre.head())
+
+print(movieDataRegion.head())
+
+print(movieDataPrime.head())
+
+movieDataPrime.to_csv('C:/Users/kurt/OneDrive/CSV Files/imdb/movieDataPrime.csv',index=False)
+movieDataGenre.to_csv('C:/Users/kurt/OneDrive/CSV Files/imdb/movieDataGenre.csv',index=False)
+movieDataRegion.to_csv('C:/Users/kurt/OneDrive/CSV Files/imdb/movieDataRegion.csv',index=False)
+
     
