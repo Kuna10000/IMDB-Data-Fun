@@ -14,33 +14,73 @@ url      = get("https://www.imdb.com/search/title/?title_type=feature,tv_movie,t
 mainPage = soup(url,'html.parser')
 movies   = mainPage.findAll('div',{'class':'lister-item mode-advanced'})
 
-movieId = []
-titles = []
-time = []
-year = []
-genre = []
-votes = []
-rating = []
-gross = []
+movieId     = []
+titles      = []
+contentType = []
+time        = []
+startYear   = []
+endYear     = []
+genre       = []
+votes       = []
+rating      = []
+gross       = []
 description = []
-region = []
-
-currentId = 0
+region      = []
+currentId   = 0
 
 for i in movies:
+    #load clicking the title bringing more movie/tv information
+    nextPageUrl = i.find('span',{'class':'lister-item-index unbold text-primary'}).find_next('a')['href']
+    url         = get("https://www.imdb.com/"+nextPageUrl,headers=headers).text
+    nextPage    = soup(url,'html.parser')
+    #load the movieId primary key
     movieId.append(currentId)
+    
+    #Start loading data----------------------------------------------------------------------------------
+    
+    #find the title
     try :
         titles.append(i.h3.a.text)
     except :
-        titles.append(-1)
+        titles.append("NAN")
+    
+    #find content type
+    try :
+        #find the value stored where TV-Series is stored
+        possibleContentType = nextPage.find('ul',attrs={'class':'ipc-inline-list ipc-inline-list--show-dividers sc-afe43def-4 kdXikI baseAlt'}).find('li',attrs={'role':'presentation'}).text
+        #Check if the value exists and says TV. If it returns null, it will go to the except statement making it a movie
+        if "TV" in possibleContentType:
+            contentType.append("tvSeries")
+        else :
+            contentType.append("movie")
+    except:
+        contentType.append("movie")
+        
+    #find length/time
     try :
         time.append((i.p.find('span',{'class':'runtime'}).text).split(' ',1)[0])
     except:
         time.append(-1)
+        
+    #find year
     try:
-        year.append((i.h3.find('span',{'class':'lister-item-year text-muted unbold'}).text).replace('(','').replace(')',''))
+        if contentType[currentId] == "movie":
+            startYear.append((i.h3.find('span',{'class':'lister-item-year text-muted unbold'}).text).replace('(','').replace(')',''))
+            endYear.append("-1")
+        else:
+           tvDates = (i.h3.find('span',{'class':'lister-item-year text-muted unbold'}).text).replace('(','').replace(')','')
+           print(tvDates.split('-'))
+           startYear.append(tvDates[0])
+           if len(tvDates) == 1:
+               endYear.append(-1)
+           elif tvDates[1] == "":
+               endYear.append("current")
+            
     except:
-        year.append(-1)
+        startYear.append(-1)
+        endYear.append(-1)
+        
+    #find genres
     try:
         genreRaw = (i.p.find('span',{'class':'genre'}).text).replace(' ','')[1:]
         genreList = genreRaw.split(",")
@@ -70,9 +110,6 @@ for i in movies:
     except:
         gross.append(-1)
     try :
-        nextPageUrl = i.find('span',{'class':'lister-item-index unbold text-primary'}).find_next('a')['href']
-        url = get("https://www.imdb.com/"+nextPageUrl,headers=headers).text
-        nextPage = soup(url,'html.parser')
         regsNoFilter = nextPage.find('li',attrs={'data-testid':'title-details-origin'}).findAll('li',attrs={'role':'presentation'})
         tempReg = []
         for reg in regsNoFilter:
@@ -80,6 +117,8 @@ for i in movies:
         region.append(tempReg)
     except:
         region.append(-1)
+    
+    
     
     if currentId <= 20:
         print("Fin ID",currentId)
@@ -90,21 +129,13 @@ for i in movies:
         
     currentId += 1
     
+    if currentId == 5:
+        break
 
-    
+print(contentType)
+print(startYear,endYear)
 
-#nextPage = mainPage.find('div',{'class':'desc'}).find_next('a')['href']
-#nextPage = "/search/title/?title_type=feature,documentary,short&languages=ja&count=100&start="+str(x)+"01&ref_=adv_nxt"
-#nextPage = "/search/title/?title_type=feature,documentary,short&countries="+reg+"&sort=num_votes,desc&count=100&start="+str(x)+"01&ref_=adv_nxt"
-#print(nextPage)
-#nextPage = get("https://www.imdb.com"+nextPage,headers=headers).text
-
-#nextPage = soup(nextPage,'html.parser')
-#movies = nextPage.findAll('div',{'class':'lister-item mode-advanced'})
-
-
-
-rows = list(zip(movieId,titles,time,year,votes,rating,gross,description))
+rows = list(zip(movieId,titles,time,startYear,votes,rating,gross,description))
 movieDataPrime = pd.DataFrame(rows,columns=['movieId','title','length','releaseYear','votes','rating','gross','description'])
 
 zipped = list(zip(movieId, genre))
