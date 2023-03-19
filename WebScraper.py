@@ -11,8 +11,8 @@ import pandas as pd
 
 def loadData(i,movotv):
     #load clicking the title bringing more movie/tv information
-    nextPageUrl = i.find('span',{'class':'lister-item-index unbold text-primary'}).find_next('a')['href']
-    url         = get("https://www.imdb.com/"+nextPageUrl,headers=headers).text
+    moreInfoUrl = i.find('span',{'class':'lister-item-index unbold text-primary'}).find_next('a')['href']
+    url         = get("https://www.imdb.com/"+moreInfoUrl,headers=headers).text
     nextPage    = soup(url,'html.parser')
     
     #load the dataId primary key
@@ -115,11 +115,18 @@ def loadData(i,movotv):
     except:
         region.append("null")
         
+    #try get the certificate rating
+    try :
+        certificate.append(i.find('span',attrs={'class':'certificate'}).text)
+    except : 
+        certificate.append("null")
+        
 
 #package data into csv format
 def packageData():
-    rows             = list(zip(dataId,contentType,titles,time,startYear,endYear,votes,rating,gross,description))
-    contentDataPrime = pd.DataFrame(rows,columns=['dataId','contentType','title','length','releaseYear','endYear','votes','rating','gross','description'])
+    
+    rows             = list(zip(dataId,contentType,titles,time,startYear,endYear,votes,rating,gross,certificate,description))
+    contentDataPrime = pd.DataFrame(rows,columns=['dataId','contentType','title','length','releaseYear','endYear','votes','rating','gross','certificate','description'])
 
     zipped           = list(zip(dataId, genre))
     genre_tuples     = [[dataId, genre] for dataId, genre_list in zipped for genre in genre_list]
@@ -129,10 +136,34 @@ def packageData():
     genre_tuples     = [[dataId, region] for dataId, region_list in zipped for region in region_list]
     contentDataRegion= pd.DataFrame(genre_tuples,columns=['dataId','region'])
 
+    try :
+        dfp = pd.read_csv('C:/Users/kurt/OneDrive/CSV Files/imdb/contentDataPrime.csv')
+        dfg = pd.read_csv('C:/Users/kurt/OneDrive/CSV Files/imdb/contentDataGenre.csv')
+        dfr = pd.read_csv('C:/Users/kurt/OneDrive/CSV Files/imdb/contentDataRegion.csv')
+        contentDataPrime = pd.concat([contentDataPrime,dfp])
+        contentDataGenre = pd.concat([contentDataGenre,dfg])
+        contentDataRegion= pd.concat([contentDataRegion,dfr])
+        dataId.clear()
+        titles.clear()     
+        contentType.clear() 
+        time.clear()     
+        startYear.clear() 
+        endYear.clear()    
+        genre.clear()       
+        votes.clear()     
+        rating.clear()    
+        gross.clear()      
+        description.clear() 
+        region.clear()     
+        certificate.clear()
+        currentId.clear()  
+    except:
+        pass
+    
     contentDataPrime.to_csv('C:/Users/kurt/OneDrive/CSV Files/imdb/contentDataPrime.csv',index=False)
     contentDataGenre.to_csv('C:/Users/kurt/OneDrive/CSV Files/imdb/contentDataGenre.csv',index=False)
     contentDataRegion.to_csv('C:/Users/kurt/OneDrive/CSV Files/imdb/contentDataRegion.csv',index=False)
-
+    
 
 #needed to get through IMDB scraping resistance
 headers     = {"user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.182 Safari/537.36"}
@@ -150,47 +181,61 @@ rating      = [] #the average rating
 gross       = [] #gross earned
 description = [] #descruption
 region      = [] #regions its in
+certificate = [] #maturity rating
 currentId   = 0  #stores the place we are in the lists
 
 
-for pageCount in range(99):
-    url      = get("https://www.imdb.com/search/title/?title_type=feature,tv_movie,documentary,short&num_votes=100,&sort=num_votes,desc&count=100&start="+str(pageCount)+"01&ref_=adv_nxt",headers=headers).text
-    mainPage = soup(url,'html.parser')
-    movies   = mainPage.findAll('div',{'class':'lister-item mode-advanced'})
+url      = get("https://www.imdb.com/search/title/?title_type=feature,tv_movie,documentary,short&num_votes=100,&sort=num_votes,desc&count=250&start=001&ref_=adv_nxt",headers=headers).text
+moviesMainPage = soup(url,'html.parser')
+movies   = moviesMainPage.findAll('div',{'class':'lister-item mode-advanced'})
+
+url      = get("https://www.imdb.com/search/title/?title_type=tv_series,tv_miniseries&num_votes=100,&sort=num_votes,desc&count=250&start=001&ref_=adv_nxt",headers=headers).text
+tvMainPage = soup(url,'html.parser')
+tvSeries = tvMainPage.findAll('div',{'class':'lister-item mode-advanced'})
+
+currentlyStored = []
+try :
+    dfp = pd.read_csv('C:/Users/kurt/OneDrive/CSV Files/imdb/contentDataPrime.csv')
+    currentlyStored = list(dfp['title'])
+except:
+    pass
+
+
+#590
+for pageCount in range(590):
     
-    #Get data/page for tv-series
-    #url      = get("https://www.imdb.com/search/title/?title_type=tv_series,tv_miniseries&num_votes=100,&sort=num_votes,desc").text
-    url      = get("https://www.imdb.com/search/title/?title_type=tv_series,tv_miniseries&num_votes=100,&sort=num_votes,desc&count=100&start="+str(pageCount)+"01&ref_=adv_nxt",headers=headers).text
-    mainPage = soup(url,'html.parser')
-    tvSeries = mainPage.findAll('div',{'class':'lister-item mode-advanced'})
-    
+    if pageCount != 0:
+        nextPageUrl = moviesMainPage.find('div',{'class':'desc'}).find('a',attrs={'class':'lister-page-next next-page'})['href']
+        url      = get("https://www.imdb.com/"+nextPageUrl,headers=headers).text
+        moviesMainPage = soup(url,'html.parser')
+        movies   = moviesMainPage.findAll('div',{'class':'lister-item mode-advanced'})
+
     #load movies
     for a in movies:
-        loadData(a,"movie")
+        if a.h3.a.text not in currentlyStored:
+            loadData(a,"movie")
+        if currentId % 499 == 0:    
+            if a.h3.a.text not in currentlyStored: 
+                packageData()
+            print("Fin ID",currentId)
         currentId += 1
+#119     
+    if pageCount <= 119:     
+        if pageCount != 0:
+            nextPageUrl = tvMainPage.find('div',{'class':'desc'}).find('a',attrs={'class':'lister-page-next next-page'})['href']
+            url      = get("https://www.imdb.com/"+nextPageUrl,headers=headers).text
+            tvMainPage = soup(url,'html.parser')
+            tvSeries = tvMainPage.findAll('div',{'class':'lister-item mode-advanced'})        
+                
+        #load tvseries
+        for b in tvSeries:
+            if b.h3.a.text not in currentlyStored:
+                loadData(b,"tvSeries")
+            if currentId % 499 == 0:   
+                if b.h3.a.text not in currentlyStored: 
+                    packageData()
+                print("Fin ID",currentId)    
+            currentId += 1    
         
-        #for me to track output, make sure its still running after some crazy amount of data
-        if currentId <= 20:
-            print("Fin ID",currentId)
-        elif currentId % 10 == 0 and currentId <= 500:    
-            print("Fin ID",currentId)
-        elif currentId % 500 == 0:    
-            packageData()
-            print("Fin ID",currentId)
-            
-    #load Tv shows
-    for b in tvSeries:
-        loadData(b,"tvSeries")
-        currentId += 1
-    
-        #for me to track output, make sure its still running after some crazy amount of data
-        if currentId <= 20:
-            print("Fin ID",currentId)
-        elif currentId % 10 == 0 and currentId <= 500:    
-            print("Fin ID",currentId)
-        elif currentId % 500 == 0:    
-            packageData()
-            print("Fin ID",currentId)
-            
 packageData()
-    
+            
