@@ -14,6 +14,7 @@ def loadData(i,movotv):
     nextPageUrl = i.find('span',{'class':'lister-item-index unbold text-primary'}).find_next('a')['href']
     url         = get("https://www.imdb.com/"+nextPageUrl,headers=headers).text
     nextPage    = soup(url,'html.parser')
+    
     #load the dataId primary key
     dataId.append(currentId)
     
@@ -90,13 +91,16 @@ def loadData(i,movotv):
     
     #find the gross earned
     try :
-        grossVal = (i.find('p',{'class':'sort-num_votes-visible'}).findAll('span',{'name':'nv'})[1].text).replace('$','')
-        newstr = ''
-        if('M' in grossVal):
-            s = grossVal.split('.')
-            s[1] = s[1].replace('M','0000')
-            newstr = s[0]+s[1]
-        gross.append(newstr)
+        if movotv == "movie":
+            grossVal = (i.find('p',{'class':'sort-num_votes-visible'}).findAll('span',{'name':'nv'})[1].text).replace('$','')
+            newstr = ''
+            if('M' in grossVal):
+                s = grossVal.split('.')
+                s[1] = s[1].replace('M','0000')
+                newstr = s[0]+s[1]
+            gross.append(newstr)
+        else :
+            gross.append(-1)
     except:
         gross.append(-1)
         
@@ -114,31 +118,24 @@ def loadData(i,movotv):
 
 #package data into csv format
 def packageData():
-    rows = list(zip(dataId,contentType,titles,time,startYear,endYear,votes,rating,gross,description))
+    rows             = list(zip(dataId,contentType,titles,time,startYear,endYear,votes,rating,gross,description))
     contentDataPrime = pd.DataFrame(rows,columns=['dataId','contentType','title','length','releaseYear','endYear','votes','rating','gross','description'])
 
-    zipped = list(zip(dataId, genre))
-    genre_tuples = [[dataId, genre] for dataId, genre_list in zipped for genre in genre_list]
+    zipped           = list(zip(dataId, genre))
+    genre_tuples     = [[dataId, genre] for dataId, genre_list in zipped for genre in genre_list]
     contentDataGenre =  pd.DataFrame(genre_tuples,columns=['dataId','genre'])
 
-    zipped = list(zip(dataId, region))
-    genre_tuples = [[dataId, region] for dataId, region_list in zipped for region in region_list]
-    contentDataRegion = pd.DataFrame(genre_tuples,columns=['dataId','region'])
-
-    print(contentDataGenre.head())
-
-    print(contentDataRegion.head())
-
-    print(contentDataPrime.head())
+    zipped           = list(zip(dataId, region))
+    genre_tuples     = [[dataId, region] for dataId, region_list in zipped for region in region_list]
+    contentDataRegion= pd.DataFrame(genre_tuples,columns=['dataId','region'])
 
     contentDataPrime.to_csv('C:/Users/kurt/OneDrive/CSV Files/imdb/contentDataPrime.csv',index=False)
     contentDataGenre.to_csv('C:/Users/kurt/OneDrive/CSV Files/imdb/contentDataGenre.csv',index=False)
     contentDataRegion.to_csv('C:/Users/kurt/OneDrive/CSV Files/imdb/contentDataRegion.csv',index=False)
 
 
-
 #needed to get through IMDB scraping resistance
-headers  = {"user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.182 Safari/537.36"}
+headers     = {"user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.182 Safari/537.36"}
 
 #data to collect
 dataId      = [] #primary key
@@ -156,16 +153,16 @@ region      = [] #regions its in
 currentId   = 0  #stores the place we are in the lists
 
 
-for pageCount in range(2):
-    url      = get("https://www.imdb.com/search/title/?title_type=feature,tv_movie,documentary,short&num_votes=100,&sort=num_votes,desc&count=100&start="+str(pageCount)+"01&ref_=adv_nxt").text
+for pageCount in range(99):
+    url      = get("https://www.imdb.com/search/title/?title_type=feature,tv_movie,documentary,short&num_votes=100,&sort=num_votes,desc&count=100&start="+str(pageCount)+"01&ref_=adv_nxt",headers=headers).text
     mainPage = soup(url,'html.parser')
     movies   = mainPage.findAll('div',{'class':'lister-item mode-advanced'})
     
     #Get data/page for tv-series
     #url      = get("https://www.imdb.com/search/title/?title_type=tv_series,tv_miniseries&num_votes=100,&sort=num_votes,desc").text
-    url      = get("https://www.imdb.com/search/title/?title_type=tv_series,tv_miniseries&num_votes=100,&sort=num_votes,desc&count=100&start="+str(pageCount)+"01&ref_=adv_nxt").text
+    url      = get("https://www.imdb.com/search/title/?title_type=tv_series,tv_miniseries&num_votes=100,&sort=num_votes,desc&count=100&start="+str(pageCount)+"01&ref_=adv_nxt",headers=headers).text
     mainPage = soup(url,'html.parser')
-    tvSeries   = mainPage.findAll('div',{'class':'lister-item mode-advanced'})
+    tvSeries = mainPage.findAll('div',{'class':'lister-item mode-advanced'})
     
     #load movies
     for a in movies:
@@ -177,7 +174,8 @@ for pageCount in range(2):
             print("Fin ID",currentId)
         elif currentId % 10 == 0 and currentId <= 500:    
             print("Fin ID",currentId)
-        elif currentId % 100 == 0:    
+        elif currentId % 500 == 0:    
+            packageData()
             print("Fin ID",currentId)
             
     #load Tv shows
@@ -190,7 +188,8 @@ for pageCount in range(2):
             print("Fin ID",currentId)
         elif currentId % 10 == 0 and currentId <= 500:    
             print("Fin ID",currentId)
-        elif currentId % 100 == 0:    
+        elif currentId % 500 == 0:    
+            packageData()
             print("Fin ID",currentId)
             
 packageData()
