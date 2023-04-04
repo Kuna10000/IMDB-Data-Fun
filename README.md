@@ -19,7 +19,7 @@ Using the beautiful soup library in python, I was able to scrape the web data of
 
 - These pages returned 250 movies/tvshows per page. Each page was sorted in descending order of vote count (amount of people who rated it). This ensured that the content scraped will have some reputability in their rating. None of the contents scraped had a vote count under 100.
 
-Here is a sample of the data format after scraping. 
+Here is a sample of the data format after scraping. Missing number data are -1 and missing text data is null
 
 <img width="264" alt="image" src="https://user-images.githubusercontent.com/113560906/229652629-ce2b9fc8-2b3a-459c-8a22-066df33a93b0.png"><img width="263" alt="image" src="https://user-images.githubusercontent.com/113560906/229652652-c9a0a993-6353-4a25-b716-90b3df1886e8.png">
 
