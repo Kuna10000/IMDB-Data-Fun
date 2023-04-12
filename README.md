@@ -16,6 +16,7 @@ The desire was for a fast way to query for movies or tvshows based on region, ge
 ### Getting The Data
 Using the beautiful soup library in python, I was able to scrape the web data off these two links :
 [Movies](https://www.imdb.com/search/title/?title_type=feature,tv_movie,documentary,short&num_votes=100,&sort=num_votes,desc&count=250&start=001&ref_=adv_nxt), [TvShows](https://www.imdb.com/search/title/?title_type=tv_series,tv_miniseries&num_votes=100,&sort=num_votes,desc&count=250&start=001&ref_=adv_nxt)
+Also uploaded to Kaggle : https://www.kaggle.com/datasets/kurtnakasato/imdb-100000-moviestvshows
 
 - These pages returned 250 movies/tvshows per page. Each page was sorted in descending order of vote count (amount of people who rated it). This ensured that the content scraped will have some reputability in their rating. None of the contents scraped had a vote count under 100.
 
