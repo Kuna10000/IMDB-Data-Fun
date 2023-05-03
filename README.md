@@ -56,8 +56,8 @@ ___
 ### Challenges/Follow Up
 - I didnt realize that TV-Movies had the release year in a different location than regular movies. Because of this, almost every TV-Movie is missing a release year leading to a very high missing movie release year percentage.
 - The code for scraping was very slow and crashed often. Because of this, it took around 3 days of scraping before it finished 102k results. Although the code should skip duplicates already in the csv, it is still really slow which means refreshing the data with fresh data is unoptimal and unoften.
--Learning and implementing Multiprocessing in Python would be a very cool follow up to allow for faster scraping which means fresher data. 
--Changing the code to retrieve the missing release years on TV-Movies and other missing values would be great for further analysis and accuracy.
--Grabbing data from other data sources would also be great as the majority of the titles are USA based.
+- Learning and implementing Multiprocessing in Python would be a very cool follow up to allow for faster scraping which means fresher data. 
+- Changing the code to retrieve the missing release years on TV-Movies and other missing values would be great for further analysis and accuracy.
+- Grabbing data from other data sources would also be great as the majority of the titles are USA based.
 
 
